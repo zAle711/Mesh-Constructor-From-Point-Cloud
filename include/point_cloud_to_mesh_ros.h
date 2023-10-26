@@ -24,6 +24,7 @@ public:
 		cloud_sub = nh.subscribe("camera/rgb/points", 1, &PointCloudToMeshRos::cloudCallBack, this);
 		
 		shape_pub = nh.advertise<shape_msgs::Mesh>("mesh_shape", 1, true);
+		f_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("filtered_point_cloud",1, true);
 		
 	}
 		
@@ -39,11 +40,21 @@ public:
 		
 			if (shape_pub.getNumSubscribers() > 0)
 			{
-				shape_msgs::Mesh shape_mesh;
+				shape_msgs::Mesh mesh_msg;
 				
-				meshToShapeMsg(cloud_to_mesh.getMesh(), shape_mesh);
-				shape_pub.publish(shape_mesh);
+				meshToShapeMsg(cloud_to_mesh.getMesh(), mesh_msg);
+				shape_pub.publish(mesh_msg);
 			
+			
+			
+			}
+			
+			if (f_cloud_pub.getNumSubscribers() > 0)
+			{
+			
+				sensor_msgs::PointCloud2 point_cloud_msg;
+				pcl::toROSMsg(cloud_to_mesh.getFilteredPointCloud(), point_cloud_msg);
+				f_cloud_pub.publish(point_cloud_msg);
 			
 			
 			}
@@ -57,6 +68,7 @@ public:
 private:
 	ros::Subscriber cloud_sub;
 	ros::Publisher shape_pub;
+	ros::Publisher f_cloud_pub;
 	
 	PointCloudToMesh cloud_to_mesh;
 	

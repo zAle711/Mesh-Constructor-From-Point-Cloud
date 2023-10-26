@@ -62,6 +62,7 @@ class PointCloudToMesh
 		gridFilter.setInputCloud (cloud_no_nan);
 		gridFilter.setLeafSize (0.05f, 0.05f, 0.05f);
 		gridFilter.filter (*cloud_voxelized);
+		filtered_point_cloud = *cloud_voxelized;
 		std::cout << "Numero di punti dopo aver applicato il filtro " << cloud_voxelized->size() << std::endl;
 		
 		//STIMO LA NORMALE PER OGNI PUNTO
@@ -118,9 +119,16 @@ class PointCloudToMesh
 	{
 		return mesh;
 	}	
+	
+	pcl::PointCloud<pcl::PointXYZ> getFilteredPointCloud()
+	{
+		return 	filtered_point_cloud;
+	}
 	private:
 	
 	boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> point_cloud;
+	
+	pcl::PointCloud<pcl::PointXYZ> filtered_point_cloud;
 	
 	pcl::PolygonMesh mesh;
 
