@@ -2,18 +2,19 @@
 #define MESHTOMSG_H
 
 #include <shape_msgs/Mesh.h>
+#include <visualization_msgs/Marker.h>
+
 #include <pcl_msgs/PolygonMesh.h>
 
 #include <pcl/PolygonMesh.h>
-
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 
 static bool meshToShapeMsg(const pcl::PolygonMesh& input_mesh, shape_msgs::Mesh& shape_msg)
 {
-	
- 	pcl_msgs::PolygonMesh pcl_msg_mesh;
+
+  pcl_msgs::PolygonMesh pcl_msg_mesh;
   pcl_conversions::fromPCL(input_mesh, pcl_msg_mesh);
 
 
@@ -63,5 +64,46 @@ static bool meshToShapeMsg(const pcl::PolygonMesh& input_mesh, shape_msgs::Mesh&
 
 }
 
+static bool meshToMarkerMsg(const pcl::PolygonMesh& in, visualization_msgs::Marker& marker)
+{
+  marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
+  marker.header.frame_id = in.cloud.header.frame_id;
+  marker.header.stamp = ros::Time::now();
+  marker.color.r = 1.0;
+  marker.color.a = 1.0;
+  marker.scale.x = 1.0;
+  marker.scale.y = 1.0;
+  marker.scale.z = 1.0;
+  marker.id = 1;
+  marker.action = visualization_msgs::Marker::ADD;
 
+
+  shape_msgs::Mesh shape_msg_mesh;
+
+  meshToShapeMsg(in, shape_msg_mesh);
+
+  size_t size_triangles = shape_msg_mesh.triangles.size();
+
+  marker.points.resize(size_triangles*3);
+
+  std::cout << "polys: " << size_triangles << " vertices: " << shape_msg_mesh.vertices.size() << "\n";
+
+  size_t i = 0;
+
+  for (size_t tri_index = 0; tri_index < size_triangles; ++tri_index){
+
+    /*
+    std::cout << shape_msg_mesh.triangles[tri_index].vertex_indices[0] <<  " " <<
+                 shape_msg_mesh.triangles[tri_index].vertex_indices[1] <<  " " <<
+                 shape_msg_mesh.triangles[tri_index].vertex_indices[2] << "\n";
+    */
+
+    marker.points[i]   = shape_msg_mesh.vertices[shape_msg_mesh.triangles[tri_index].vertex_indices[0]];
+    marker.points[i+1] = shape_msg_mesh.vertices[shape_msg_mesh.triangles[tri_index].vertex_indices[1]];
+    marker.points[i+2] = shape_msg_mesh.vertices[shape_msg_mesh.triangles[tri_index].vertex_indices[2]];
+    i = i + 3;
+
+  }
+    return true;
+}
 #endif
