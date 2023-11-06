@@ -94,61 +94,6 @@ public:
 
         }
 	}
-    /*
-	void cloudCallBack(const sensor_msgs::PointCloud2::ConstPtr& cloud_in)
-	{
-		ROS_INFO("Messaggio Arrivato!");
-
-        //std::cout << cloud_in->header.frame_id << std::endl;
-
-		sensor_msgs::PointCloud2 cloud_out;
-		tf::StampedTransform transform;
-
-		bool transform_done = pcl_ros::transformPointCloud("world", *cloud_in, cloud_out, listener);
-		if (!transform_done)
-		{
-			listener.waitForTransform("world", "openni_rgb_optical_frame", ros::Time(0), ros::Duration(0.5));
-			ROS_INFO("Waiting for Transform (0.5s)");
-			//listener.waitForTransform("world", "openni_rgb_optical_frame", ros::Time::now(), ros::Duration(0.5));
-			if (!pcl_ros::transformPointCloud("world", *cloud_in, cloud_out, listener))
-			{
-				ROS_INFO("Message Discarded. Can't transform from /openni_rgb_optical_frame --> /world ");
-				return;
-			}
-		}
-
-		pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud (new pcl::PointCloud<pcl::PointXYZ>());
-		pcl::fromROSMsg(cloud_out, *point_cloud);
-
-		cloud_to_mesh.set_input(point_cloud);
-
-		if (cloud_to_mesh.compute_mesh())
-		{
-
-			if (shape_pub.getNumSubscribers() > 0)
-			{
-				shape_msgs::Mesh mesh_msg;
-
-				meshToShapeMsg(cloud_to_mesh.getMesh(), mesh_msg);
-				shape_pub.publish(mesh_msg);
-				ROS_INFO("Pubblicata Mesh Ricostruita");
-			}
-
-
-
-
-			if (cloud_pub.getNumSubscribers() > 0 )
-			{
-				sensor_msgs::PointCloud2 point_cloud_msg;
-				pcl::toROSMsg(cloud_to_mesh.getGlobalPointCloud(), point_cloud_msg);
-				cloud_pub.publish(point_cloud_msg);
-				ROS_INFO("Pubblicata Point Cloud Filtrata");
-
-			}
-
-		}
-	}
-    */
 
 private:
 	ros::Subscriber cloud_sub;
