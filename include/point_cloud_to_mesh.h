@@ -94,6 +94,16 @@ class PointCloudToMesh
 		return true;
 	}
 
+	void save_to_file()
+	{
+        pcl::io::savePCDFileASCII ("/home/global_point_cloud.pcd", global_point_cloud);
+	}
+
+    void save_to_file(int n_cloud)
+    {
+        pcl::io::savePCDFileASCII ("/home/clouds_from_node/single_clouds/" + std::to_string(n_cloud) + ".pcd", global_point_cloud);
+    }
+
 	pcl::PolygonMesh getMesh()
 	{
 		return mesh;

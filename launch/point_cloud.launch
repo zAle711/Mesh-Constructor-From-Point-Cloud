@@ -1,0 +1,10 @@
+<launch>
+
+    <node name="point_cloud_recorder" pkg="mesh_constructor" type="mesh_constructor_node" output="screen" respawn="true">
+        <remap from="cloud_in" to="camera/rgb/points" />
+        <param name="waiting_time" value="0.3" />
+        <param name="queue_size" value="1" />
+        <param name="save_to_file" value="false" />
+    </node>
+
+</launch>

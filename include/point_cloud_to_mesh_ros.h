@@ -15,28 +15,31 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
 
-
-//template <typename PointT>
 class PointCloudToMeshRos
 {
 public:
+
 	PointCloudToMeshRos()
 	{
 		ros::NodeHandle nh;
 
-		cloud_sub = nh.subscribe("camera/rgb/points", 100, &PointCloudToMeshRos::registerPointCloudCallBack, this);
+        nh.param("/point_cloud_recorder/waiting_time", waiting_time, 0.5);
+        nh.param("/point_cloud_recorder/queue_size", queue_size, 1);
+        nh.param("/point_cloud_recorder/save_to_file", save_to_file, false);
+
+
+		cloud_sub = nh.subscribe("cloud_in", queue_size, &PointCloudToMeshRos::registerPointCloudCallBack, this);
 
 		shape_pub = nh.advertise<shape_msgs::Mesh>("mesh_shape", 1, true);
 		marker_pub = nh.advertise<visualization_msgs::Marker>("mesh_marker", 1, true);
 		cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("global_point_cloud",1, true);
 
-
-
 	}
 
 	void registerPointCloudCallBack (const sensor_msgs::PointCloud2::ConstPtr& cloud_in)
 	{
-        ROS_INFO("New Point Cloud Received");
+	    total_point_cloud_received += 1;
+        ROS_INFO("New Point Cloud Received %d", total_point_cloud_received);
 
         //Transform Point Cloud with TF Info
         sensor_msgs::PointCloud2 cloud_out;
@@ -45,8 +48,8 @@ public:
 		bool transform_done = pcl_ros::transformPointCloud("world", *cloud_in, cloud_out, listener);
 		if (!transform_done)
 		{
-			listener.waitForTransform("world", cloud_in->header.frame_id, ros::Time(0), ros::Duration(0.5)); //ros::Time::now()
-			ROS_INFO("Waiting for Transform (0.5s)");
+			listener.waitForTransform("world", cloud_in->header.frame_id, ros::Time::now(), ros::Duration(waiting_time)); //ros::Time::now() ros::Time(0)
+			ROS_INFO("Waiting for Transform (%.2fs)", waiting_time);
 			if (!pcl_ros::transformPointCloud("world", *cloud_in, cloud_out, listener))
 			{
 				ROS_INFO("Message Discarded. Can't transform from %s --> /world ", cloud_in->header.frame_id.c_str());
@@ -59,12 +62,16 @@ public:
 
 		if (cloud_to_mesh.register_point_cloud(new_point_cloud))
         {
+            point_cloud_registered += 1;
             if (cloud_pub.getNumSubscribers() > 0 )
             {
                 sensor_msgs::PointCloud2 point_cloud_msg;
 				pcl::toROSMsg(cloud_to_mesh.getGlobalPointCloud(), point_cloud_msg);
 				cloud_pub.publish(point_cloud_msg);
-				ROS_INFO("Global Point Cloud published");
+
+				if (save_to_file) cloud_to_mesh.save_to_file(point_cloud_registered);
+
+				ROS_INFO("Global Point Cloud published, merged point cloud: %d/%d", point_cloud_registered, total_point_cloud_received);
             }
         }
         else
@@ -73,7 +80,7 @@ public:
             return;
         }
 
-        if (cloud_to_mesh.compute_mesh())
+        if (false) //cloud_to_mesh.compute_mesh()
         {
             if (shape_pub.getNumSubscribers() > 0)
             {
@@ -105,6 +112,12 @@ private:
 	tf::TransformListener listener;
 
 	PointCloudToMesh cloud_to_mesh;
+
+	int point_cloud_registered = 0;
+	int total_point_cloud_received = 0;
+	double waiting_time;
+	int queue_size;
+	bool save_to_file;
 
 };
 
