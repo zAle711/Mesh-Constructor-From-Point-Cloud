@@ -17,6 +17,8 @@
 #include <pcl/surface/gp3.h>
 #include <pcl/io/pcd_io.h>
 
+#include<Chunk.h>
+
 //template <typename PointT, typename PointTNormal>
 class PointCloudToMesh
 {
