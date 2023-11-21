@@ -1,13 +1,13 @@
 <launch>
 
     <node name="point_cloud_recorder" pkg="mesh_constructor" type="mesh_constructor_node" output="screen" respawn="true">
-        <remap from="cloud_in" to="camera/rgb/points" />
+        <remap from="cloud_in" to="/player0/scan_cloud" />
         <param name="waiting_time" value="0.5" />
         <param name="queue_size" value="1" />
         <param name="save_to_file" value="false" />
         <param name="chunkSize" value="16" />
-        <param name="offset" value="10.0" />
-        <param name="precision" value="100.0" />
+        <param name="offset" value="100.0" />
+        <param name="precision" value="1000.0" />
     </node>
 
 </launch>

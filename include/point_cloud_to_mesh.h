@@ -26,6 +26,23 @@ class PointCloudToMesh
 
 	PointCloudToMesh() { }
 
+	void filter_point_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_in, pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_out)
+	{
+        if (point_cloud_in->size() <= 0) return;
+
+        //Remove Nan
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_no_nan  (new pcl::PointCloud<pcl::PointXYZ>);
+		std::vector<int> indices;
+		pcl::removeNaNFromPointCloud(*point_cloud_in, *cloud_no_nan, indices);
+
+		//Filter Point Cloud
+		pcl::VoxelGrid<pcl::PointXYZ> gridFilter;
+		gridFilter.setInputCloud (cloud_no_nan);
+		gridFilter.setLeafSize (0.025f, 0.025f, 0.025f);
+		gridFilter.filter (*point_cloud_out);
+
+	}
+
     bool register_point_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_in)
     {
         if (!point_cloud_in.get()) return false;

@@ -16,11 +16,11 @@ class Chunk {
 
     Chunk()
     {
-        for (int x = 0; x < size; x ++)
+        for (int z = 0; z < size; z++)
         {
             for (int y = 0; y < size; y++)
             {
-                for (int z = 0; z < size; z++)
+                for (int x = 0; x < size; x++)
                 {
                     chunkData[x][y][z] = false;
                 }
@@ -49,35 +49,24 @@ public:
 
     string GetChunkKey(int x, int y, int z)
     {
-        string key = to_string((x/chunkSize) * chunkSize) + "-" + to_string((y/chunkSize) * chunkSize) + "-" + to_string((z / chunkSize) * chunkSize);
-        return key;
+        return to_string((x/chunkSize) * chunkSize) + "-" + to_string((y/chunkSize) * chunkSize) + "-" + to_string((z / chunkSize) * chunkSize);
+
     }
-
-    /*
-    string GetChunkKey(int x, int y, int z)
-    {
-
-        int kx = (x/chunkSize) * chunkSize;
-        int ky = (y/chunkSize) * chunkSize;
-        int kz = (z/chunkSize) * chunkSize;
-
-        ROS_INFO("%d %d %d", kx, ky, kz);
-
-        string key = to_string(kx) + "-" + to_string(ky) + "-" + to_string(kz);
-        ROS_INFO("CHUNK KEY: %s", key.c_str());
-        return key;
-    } */
 
     bool CheckBlock(int x, int y, int z)
     {
 
         //ROS_INFO("%d %d %d", ix, iy, iz);
+        int chunk_x = (x < 0) ?  ( x / chunkSize) -1 : x / chunkSize;
+        int chunk_y = (y < 0) ?  ( y / chunkSize) -1 : y / chunkSize;
+        int chunk_z = (z < 0) ?  ( z / chunkSize) -1 : z / chunkSize;
 
-        string chunk_key = GetChunkKey(x, y, z);
+        string chunk_key = GetChunkKey(chunk_x, chunk_y, chunk_z);
         //ROS_INFO("%s", chunk_key.c_str());
-        int index_x = x % chunkSize;
-        int index_y = y % chunkSize;
-        int index_z = z % chunkSize;
+        int index_x = (x < 0) ? x & chunkSize - 1 : x % chunkSize;
+        int index_y = (y < 0) ? y & chunkSize - 1 : y % chunkSize;
+        int index_z = (z < 0) ? z & chunkSize - 1 : z % chunkSize;
+
         if (chunkDict.find(chunk_key) != chunkDict.end())  // La chiave c'è
         {
 

@@ -74,15 +74,18 @@ public:
         posearray.header.stamp = ros::Time::now(); // timestamp of creation of the msg
         posearray.header.frame_id = "world";
         int i = 0;
-	    for (auto elem : new_point_cloud->points)
-        {
 
-            if (pcl::isFinite(elem))
-            {
+        pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_point_cloud (new pcl::PointCloud<pcl::PointXYZ>());
+        cloud_to_mesh.filter_point_cloud(new_point_cloud, filtered_point_cloud);
+
+        ROS_INFO("Original size: %lu, filtered size: %lu", new_point_cloud->size(),filtered_point_cloud->size());
+
+	    for (auto elem : filtered_point_cloud->points)
+        {
                 i += 1;
-                int x = (int) ( (elem.x + offset) * precision );
-                int y = (int) ( (elem.y + offset) * precision );
-                int z = (int) ( (elem.z + offset) * precision );
+                int x = (int) ( elem.x  * precision );
+                int y = (int) ( elem.y  * precision );
+                int z = (int) ( elem.z  * precision );
                 //ROS_INFO("%f %f %f %d %d %d", elem.x, elem.y, elem.z, x, y, z);
 
                 if (voxelWorld->CheckBlock(x, y, z))
@@ -100,38 +103,15 @@ public:
 
                     posearray.poses.push_back(p);
                 }
-                /*
-                int x = (int) (elem.x * precision);
-                int y = (int) (elem.y * precision);
-                int z = (int) (elem.z * precision);
-
-                std::string key = std::to_string(x) + "-" + std::to_string(y) + "-" + std::to_string(z);
-                //ROS_INFO("%s", key.c_str());
-                /*
-                int set_size = uniquePoints.size();
-                uniquePoints.insert(key);
-                if (set_size != uniquePoints.size())
-                {
-                    geometry_msgs::Pose p;
-                    p.position.x = x / precision;
-                    p.position.y = y / precision;
-                    p.position.z = z / precision;
-
-                    p.orientation.x = 0;
-                    p.orientation.y = 0;
-                    p.orientation.z = 0;
-                    p.orientation.w = 0;
-
-
-                    posearray.poses.push_back(p);
-                    //if (uniquePoints.size() % 345 == 0) ROS_INFO("%f, %f, %f", p.position.x, p.position.y, p.position.z);
-                }
-                */
-             }
 
         }
         ROS_INFO("Point Cloud Traslated %d/%d, Pose array size: %lu/%d", point_cloud_registered, total_point_cloud_received, posearray.poses.size(), i);
-        points_pub.publish(posearray);
+
+        if (posearray.poses.size() > 0)
+        {
+            points_pub.publish(posearray);
+        }
+
 	}
 
 	void registerPointCloudCallBack (const sensor_msgs::PointCloud2::ConstPtr& cloud_in)
