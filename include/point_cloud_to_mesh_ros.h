@@ -96,7 +96,7 @@ public:
 
                 int chunkMultiplier = 100 / chunkSize;
 
-                chunk_pos_x = x_positive ? chunk_pos_x * chunkMultiplier + pos_x / chunkSize : chunk_pos_x * chunkMultiplier - (pos_x / chunkSize)- 1;
+                chunk_pos_x = x_positive ? chunk_pos_x * chunkMultiplier + pos_x / chunkSize : chunk_pos_x * chunkMultiplier - (pos_x / chunkSize) - 1;
                 chunk_pos_y = y_positive ? chunk_pos_y * chunkMultiplier + pos_y / chunkSize : chunk_pos_y * chunkMultiplier - (pos_y / chunkSize) - 1;
                 chunk_pos_z = z_positive ? chunk_pos_z * chunkMultiplier + pos_z / chunkSize : chunk_pos_z * chunkMultiplier - (pos_z / chunkSize) - 1;
 
