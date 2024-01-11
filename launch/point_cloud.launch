@@ -4,10 +4,8 @@
         <remap from="cloud_in" to="/player0/scan_cloud" />
         <param name="waiting_time" value="0.5" />
         <param name="queue_size" value="1" />
-        <param name="save_to_file" value="false" />
-        <param name="chunkSize" value="16" />
-        <param name="offset" value="100.0" />
-        <param name="precision" value="1000.0" />
+        <param name="save_to_file" value="true" />
+        <param name="chunkSize" value="50" />
     </node>
 
 </launch>

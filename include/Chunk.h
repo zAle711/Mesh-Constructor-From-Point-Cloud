@@ -11,22 +11,28 @@ using namespace std;
 
 class Chunk {
   public:
-    int size = 16;
-    array<array<array<bool, 16>, 16>, 16> chunkData;
+    int size;
+    bool* chunkData;
+    Chunk(int chunkSize) {
+        size = chunkSize;
+        chunkData = new bool[size * size * size];
+    }
 
-    Chunk()
+    int get_index(int x, int y, int z)
     {
-        for (int z = 0; z < size; z++)
-        {
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    chunkData[x][y][z] = false;
-                }
-            }
+        return x + y * size + z * size * size;
+    }
 
-        }
+    void set_data(int x, int y, int z, bool value)
+    {
+        int index = get_index(x,y,z);
+        chunkData[index] = value;
+    }
+
+    bool get_data(int x, int y, int z)
+    {
+        int index = get_index(x,y,z);
+        return chunkData[index];
     }
 };
 
@@ -34,53 +40,41 @@ class Chunk {
 class World {
 public:
     int chunkSize;
-    float offset;
-    float precision;
     unordered_map<string, Chunk> chunkDict;
 
-    World(int cSize, float off, float pre)
+    World(int cSize)
     {
         chunkSize = cSize;
-        offset = off;
-        precision = pre;
 
-        ROS_INFO("WORLD: %d, %f, %f", chunkSize, offset, precision);
+        ROS_INFO("WORLD: %d", chunkSize);
     }
 
     string GetChunkKey(int x, int y, int z)
     {
-        return to_string((x/chunkSize) * chunkSize) + "-" + to_string((y/chunkSize) * chunkSize) + "-" + to_string((z / chunkSize) * chunkSize);
+        return to_string(x) + "_" + to_string(y) + "_" + to_string(z);
 
     }
 
-    bool CheckBlock(int x, int y, int z)
+    bool CheckBlock(int chunk_x, int chunk_y, int chunk_z, int x, int y, int z)
     {
 
-        //ROS_INFO("%d %d %d", ix, iy, iz);
-        int chunk_x = (x < 0) ?  ( x / chunkSize) -1 : x / chunkSize;
-        int chunk_y = (y < 0) ?  ( y / chunkSize) -1 : y / chunkSize;
-        int chunk_z = (z < 0) ?  ( z / chunkSize) -1 : z / chunkSize;
-
         string chunk_key = GetChunkKey(chunk_x, chunk_y, chunk_z);
-        //ROS_INFO("%s", chunk_key.c_str());
-        int index_x = (x < 0) ? x & chunkSize - 1 : x % chunkSize;
-        int index_y = (y < 0) ? y & chunkSize - 1 : y % chunkSize;
-        int index_z = (z < 0) ? z & chunkSize - 1 : z % chunkSize;
+
 
         if (chunkDict.find(chunk_key) != chunkDict.end())  // La chiave c'è
         {
 
-            Chunk c = chunkDict[chunk_key];
-
-            if (c.chunkData[index_x][index_y][index_z]) return false;
-            else c.chunkData[index_x][index_y][index_z] = true;
+            Chunk c = chunkDict.at(chunk_key.c_str());
+            if (c.get_data(x, y, z)) return false;
+            else c.set_data(x, y, z, true);
 
         } else
         {
             //ROS_INFO("Chunk Creato %s", chunk_key.c_str());
-            Chunk c;
-            c.chunkData[index_x][index_y][index_z] = true;
-            chunkDict[chunk_key] = c;
+            Chunk c(chunkSize);
+            c.set_data(x, y, z, true);
+            chunkDict.insert(make_pair(chunk_key, c));
+            //chunkDict[chunk_key] = c;
         }
 
         return true;

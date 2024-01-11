@@ -58,7 +58,7 @@ class PointCloudToMesh
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_voxelized (new pcl::PointCloud<pcl::PointXYZ>);
 		pcl::VoxelGrid<pcl::PointXYZ> gridFilter;
 		gridFilter.setInputCloud (cloud_no_nan);
-		gridFilter.setLeafSize (0.05f, 0.05f, 0.05f);
+		gridFilter.setLeafSize (0.025f, 0.025f, 0.025f);
 		gridFilter.filter (*cloud_voxelized);
 
         if (global_point_cloud.size() == 0)
@@ -115,7 +115,7 @@ class PointCloudToMesh
 
 	void save_to_file()
 	{
-        pcl::io::savePCDFileASCII ("/home/global_point_cloud.pcd", global_point_cloud);
+        pcl::io::savePCDFileASCII ("/home/global_point_cloud_unreal.pcd", global_point_cloud);
 	}
 
     void save_to_file(int n_cloud)

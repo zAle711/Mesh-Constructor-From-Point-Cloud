@@ -17,6 +17,7 @@
 #include <pcl_ros/transforms.h>
 
 //#include <Chunk.h>
+#include <cmath>
 
 class PointCloudToMeshRos
 {
@@ -28,11 +29,8 @@ public:
 
         nh.param("/point_cloud_recorder/waiting_time", waiting_time, 0.5);
         nh.param("/point_cloud_recorder/queue_size", queue_size, 1);
-        nh.param("/point_cloud_recorder/save_to_file", save_to_file, false);
+        nh.param("/point_cloud_recorder/save_to_file", save_to_file, true);
         nh.param("/point_cloud_recorder/chunkSize", chunkSize, 16);
-        nh.param("/point_cloud_recorder/offset", offset, 10.0f);
-        nh.param("/point_cloud_recorder/precision", precision, 100.0f);
-
 
 		cloud_sub = nh.subscribe("cloud_in", queue_size, &PointCloudToMeshRos::updatePointCloud, this);
 
@@ -42,7 +40,7 @@ public:
 		cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("global_point_cloud",1, true);
 		points_pub = nh.advertise<geometry_msgs::PoseArray>("points_array",1 , true);
 
-		voxelWorld = new World(chunkSize, offset, precision);
+		voxelWorld = new World(chunkSize);
 
 	}
 
@@ -53,14 +51,14 @@ public:
         sensor_msgs::PointCloud2 cloud_out;
 		tf::StampedTransform transform;
 
-		bool transform_done = pcl_ros::transformPointCloud("world", *cloud_in, cloud_out, listener);
+		bool transform_done = pcl_ros::transformPointCloud("map", *cloud_in, cloud_out, listener);
 		if (!transform_done)
 		{
-			listener.waitForTransform("world", cloud_in->header.frame_id, ros::Time::now(), ros::Duration(waiting_time)); //ros::Time::now() ros::Time(0)
+			listener.waitForTransform("map", cloud_in->header.frame_id, ros::Time::now(), ros::Duration(waiting_time)); //ros::Time::now() ros::Time(0)
 			ROS_INFO("Waiting for Transform (%.2fs)", waiting_time);
-			if (!pcl_ros::transformPointCloud("world", *cloud_in, cloud_out, listener))
+			if (!pcl_ros::transformPointCloud("map", *cloud_in, cloud_out, listener))
 			{
-				ROS_INFO("Message Discarded. Can't transform from %s --> /world ", cloud_in->header.frame_id.c_str());
+				ROS_INFO("Message Discarded. Can't transform from %s --> /map ", cloud_in->header.frame_id.c_str());
 				return;
 			}
 		}
@@ -72,7 +70,7 @@ public:
 
         geometry_msgs::PoseArray  posearray;
         posearray.header.stamp = ros::Time::now(); // timestamp of creation of the msg
-        posearray.header.frame_id = "world";
+        posearray.header.frame_id = "map";
         int i = 0;
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_point_cloud (new pcl::PointCloud<pcl::PointXYZ>());
@@ -82,19 +80,46 @@ public:
 
 	    for (auto elem : filtered_point_cloud->points)
         {
+                //ROS_INFO("Punti ricevuti: %f %f %f", elem.x, elem.y, elem.z);
                 i += 1;
-                int x = (int) ( elem.x  * precision );
-                int y = (int) ( elem.y  * precision );
-                int z = (int) ( elem.z  * precision );
-                //ROS_INFO("%f %f %f %d %d %d", elem.x, elem.y, elem.z, x, y, z);
+                bool x_positive = elem.x >= 0;
+                bool y_positive = elem.y >= 0;
+                bool z_positive = elem.z >= 0;
 
-                if (voxelWorld->CheckBlock(x, y, z))
+                int chunk_pos_x = (int) elem.x;
+                int chunk_pos_y = (int) elem.y;
+                int chunk_pos_z = (int) elem.z;
+
+                int pos_x = int(abs(elem.x)*100 - (floor(abs(elem.x)))*100);
+                int pos_y = int(abs(elem.y)*100 - (floor(abs(elem.y)))*100);
+                int pos_z = int(abs(elem.z)*100 - (floor(abs(elem.z)))*100);
+
+                int chunkMultiplier = 100 / chunkSize;
+
+                chunk_pos_x = x_positive ? chunk_pos_x * chunkMultiplier + pos_x / chunkSize : chunk_pos_x * chunkMultiplier - (pos_x / chunkSize)- 1;
+                chunk_pos_y = y_positive ? chunk_pos_y * chunkMultiplier + pos_y / chunkSize : chunk_pos_y * chunkMultiplier - (pos_y / chunkSize) - 1;
+                chunk_pos_z = z_positive ? chunk_pos_z * chunkMultiplier + pos_z / chunkSize : chunk_pos_z * chunkMultiplier - (pos_z / chunkSize) - 1;
+
+
+                pos_x = pos_x < chunkSize ? pos_x : pos_x - (pos_x / chunkSize) * chunkSize;
+                pos_y = pos_y < chunkSize ? pos_y : pos_y - (pos_y / chunkSize) * chunkSize;
+                pos_z = pos_z < chunkSize ? pos_z : pos_z - (pos_z / chunkSize) * chunkSize;
+
+                pos_x = x_positive ? pos_x : chunkSize - 1 - pos_x;
+                pos_y = y_positive ? pos_y : chunkSize - 1 - pos_y;
+                pos_z = z_positive ? pos_z : chunkSize - 1 - pos_z;
+
+                //ROS_INFO("Punti Elaborati %d %d %d %d %d %d", chunk_pos_x, chunk_pos_y, chunk_pos_z, pos_x, pos_y, pos_z);
+
+                if (voxelWorld->CheckBlock(chunk_pos_x, chunk_pos_y, chunk_pos_z, pos_x, pos_y, pos_z))
                 {
 
                     geometry_msgs::Pose p;
-                    p.position.x = x;
-                    p.position.y = y;
-                    p.position.z = z;
+                    p.position.x = x_positive ? (float) chunk_pos_x + (float) pos_x / (float) 100 : (float) chunk_pos_x - (float) pos_x / (float) 100;
+                    p.position.y = y_positive ? (float) chunk_pos_y + (float) pos_y / (float) 100 : (float) chunk_pos_y - (float) pos_y / (float) 100;
+                    p.position.z = z_positive ? (float) chunk_pos_z + (float) pos_z / (float) 100 : (float) chunk_pos_z - (float) pos_z / (float) 100;
+
+                    //ROS_INFO("chunks %d_%d_%d indexs %d %d %d point: %f %f %f", chunk_pos_x, chunk_pos_y, chunk_pos_z, pos_x, pos_y, pos_z, p.position.x, p.position.y, p.position.z);
 
                     p.orientation.x = 0;
                     p.orientation.y = 0;
@@ -147,7 +172,7 @@ public:
 				pcl::toROSMsg(cloud_to_mesh.getGlobalPointCloud(), point_cloud_msg);
 				cloud_pub.publish(point_cloud_msg);
 
-				if (save_to_file) cloud_to_mesh.save_to_file(point_cloud_registered);
+				if (true) cloud_to_mesh.save_to_file();
 
 				ROS_INFO("Global Point Cloud published, merged point cloud: %d/%d", point_cloud_registered, total_point_cloud_received);
             }
@@ -195,8 +220,6 @@ private:
 
     World* voxelWorld;
     int chunkSize;
-    float offset;
-    float precision;
 
 	int point_cloud_registered = 0;
 	int total_point_cloud_received = 0;
